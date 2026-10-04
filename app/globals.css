@@ -1,0 +1,1162 @@
+@import "tailwindcss";
+
+/*
+ * FlareNexus design tokens.
+ *
+ * Raw values live on :root as --fx-* custom properties. The @theme block below maps them to
+ * Tailwind utilities using the `inline` option, so a single token set drives the whole
+ * application. FlareNexus is a space-dark product: there is deliberately no light theme,
+ * because a pale "SaaS light mode" contradicts the immersive research-console identity the
+ * interface is built around.
+ *
+ * MONOCHROME. The interface is built from a neutral value scale plus three reserved status
+ * hues. Nothing in the chrome carries a hue of its own — hierarchy comes from value, weight,
+ * spacing and rules. Because every accent in the application is expressed as a Tailwind
+ * utility backed by one of these tokens (see the audit in lib/tones.js), recolouring the
+ * product is a change to this file rather than a sweep across every component.
+ *
+ * Colour meaning is fixed across the product, and every status is also carried by text or an
+ * icon (see lib/tones.js), so colour is never the only signal:
+ *   white   --fx-brand   identity, primary actions, active navigation, emphasis
+ *   grey    --fx-signal  telemetry, data, evidence, the scientific instrument layer
+ *   grey    --fx-info    informational context, orbital environment
+ *   amber   --fx-ember   fire, combustion, warnings
+ *   red     --fx-alert   critical fire conditions
+ *   green   --fx-safe    verified and safe states, used sparingly
+ *
+ * The reserved hues are desaturated relative to a typical UI palette so they read as
+ * instrument annunciators rather than as decoration. Note that the amber in the *interface*
+ * is deliberately duller than the amber in the flame shader: the shader renders combustion,
+ * the token renders a label about combustion, and a label should never outshout its subject.
+ *
+ * The --fx-depth-* ladder is what makes the interface read as spatial rather than flat. Each
+ * step is a distinct plane, and surfaces are composed by depth rather than by stacking borders:
+ *
+ *   void     #050505   page canvas, furthest away
+ *   deep     #0A0A0A   atmosphere, the mid-plane behind everything
+ *   surface  #111111   panel field
+ *   raised   #161616   raised instruments and inner fills
+ *   overlay  #1C1C1C   popovers, drawers, modals
+ *
+ * Depth only reads as depth when there is something behind the translucency to reveal. That is
+ * why the atmosphere layer (components/space/SpaceEnvironment) is built from gradients, a
+ * starfield and orbital arcs rather than a flat colour: blur over real content is what
+ * separates an instrument from a card. Blur over a solid fill is just glassmorphism.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Depth ladder. Ordered darkest to lightest; every surface picks one of these. */
+  --fx-depth-void: #050505;
+  --fx-depth-deep: #0a0a0a;
+  --fx-depth-surface: #111111;
+  --fx-depth-raised: #161616;
+  --fx-depth-overlay: #1c1c1c;
+
+  /* Surfaces. Thin aliases onto the ladder so call sites read as intent, not as a hex. */
+  --fx-surface: var(--fx-depth-void);
+  --fx-space-void: var(--fx-depth-void);
+  --fx-space-deep: var(--fx-depth-deep);
+  --fx-panel: var(--fx-depth-surface);
+  --fx-surface-raised: var(--fx-depth-raised);
+  --fx-elevated: var(--fx-depth-raised);
+  --fx-overlay: var(--fx-depth-overlay);
+
+  /* Structure. Hairlines, not boxes. */
+  --fx-line: #292929;
+  --fx-line-strong: #363636;
+  --fx-hairline: rgb(255 255 255 / 0.09);
+  --fx-hairline-lit: rgb(255 255 255 / 0.28);
+
+  /*
+   * Ink. ink-faint is the lowest step still in use for text and clears 5.3:1 on --fx-panel;
+   * anything below that is decorative only and must never carry a word.
+   */
+  --fx-ink: #ffffff;
+  --fx-ink-muted: #b8b8b8;
+  --fx-ink-faint: #808080;
+  --fx-ink-disabled: #555555;
+
+  /*
+   * Accents. White and two greys stand in for the three identity/telemetry roles the product
+   * used to express as violet, cyan and blue, which keeps every existing `text-brand`,
+   * `bg-signal/12` and `border-brand/35` call site correct without editing it. The three
+   * reserved status hues below are the only chromatic values left in the interface.
+   */
+  --fx-brand: #ffffff;
+  --fx-brand-deep: #e6e6e6;
+  --fx-brand-vivid: #ffffff;
+  --fx-info: #808080;
+  --fx-signal: #b8b8b8;
+  --fx-ember: #c77b30;
+  --fx-ember-deep: #a85f1e;
+  --fx-alert: #b33a32;
+  --fx-safe: #3f7d58;
+  --fx-focus: #ffffff;
+
+  /*
+   * Space atmosphere. Alpha values are low by design — this layer establishes place without
+   * ever competing with data, which is why it is safe to sit behind every panel. Two neutral
+   * washes replace the three tinted nebulae the interface used to carry; the depth they give
+   * the frame is unchanged, only the hue is gone.
+   */
+  --fx-space-nebula-deep: rgb(255 255 255 / 0.035);
+  --fx-space-nebula-lift: rgb(255 255 255 / 0.022);
+  --fx-space-horizon: rgb(255 255 255 / 0.07);
+  --fx-space-horizon-warm: rgb(214 214 214 / 0.05);
+  --fx-space-star: rgb(255 255 255 / 0.7);
+  --fx-space-star-dim: rgb(255 255 255 / 0.22);
+  --fx-space-orbit: rgb(255 255 255 / 0.14);
+  --fx-space-vignette: rgb(5 5 5 / 0.62);
+
+  /* Instrument lighting. White for identity and AI, grey for telemetry and data. */
+  --fx-glow-brand: rgb(255 255 255 / 0.16);
+  --fx-glow-brand-vivid: rgb(255 255 255 / 0.26);
+  --fx-glow-signal: rgb(255 255 255 / 0.12);
+  --fx-glow-ember: rgb(199 123 48 / 0.22);
+  --fx-glow-ember-deep: rgb(199 123 48 / 0.32);
+
+  /*
+   * Destination surfaces, used by the planet and mission-selector visuals. Differentiated by
+   * value rather than by hue: the destinations stay tellable apart in a monochrome interface
+   * because no two of them sit at the same lightness.
+   */
+  --fx-planet-earth: #6e6e6e;
+  --fx-planet-moon: #a8a8a8;
+  --fx-planet-mars: #7a6f68;
+  --fx-planet-station: #c0c0c0;
+
+  /* Plotting surface. Charts sit a step below panels so grid lines stay legible. */
+  --fx-plot: #0b0b0b;
+  --fx-grid-line: rgb(255 255 255 / 0.035);
+  --fx-grid-line-major: rgb(255 255 255 / 0.08);
+
+  --fx-glass: rgb(17 17 17 / 0.66);
+  --fx-glass-deep: rgb(10 10 10 / 0.82);
+  --fx-shadow: 0 24px 56px -28px rgb(0 0 0 / 0.92);
+  --fx-shadow-lifted: 0 32px 72px -30px rgb(0 0 0 / 0.96);
+
+  /* Radii live in @theme below: Tailwind needs to own the name to emit `rounded-*`. */
+
+  /* Density token read by the compact-mode override in @layer utilities. */
+  --fx-card-pad-compact: 0.875rem;
+}
+
+@theme inline {
+  --color-void: var(--fx-depth-void);
+  --color-deep: var(--fx-depth-deep);
+  --color-panel: var(--fx-depth-surface);
+  --color-raised: var(--fx-depth-raised);
+  --color-overlay: var(--fx-depth-overlay);
+  --color-plot: var(--fx-plot);
+
+  --color-surface: var(--fx-surface);
+  --color-surface-raised: var(--fx-surface-raised);
+  --color-elevated: var(--fx-elevated);
+
+  --color-line: var(--fx-line);
+  --color-line-strong: var(--fx-line-strong);
+
+  --color-ink: var(--fx-ink);
+  --color-ink-muted: var(--fx-ink-muted);
+  --color-ink-faint: var(--fx-ink-faint);
+  --color-ink-disabled: var(--fx-ink-disabled);
+
+  --color-brand: var(--fx-brand);
+  --color-brand-deep: var(--fx-brand-deep);
+  --color-brand-vivid: var(--fx-brand-vivid);
+  --color-info: var(--fx-info);
+  --color-signal: var(--fx-signal);
+  --color-ember: var(--fx-ember);
+  --color-ember-deep: var(--fx-ember-deep);
+  --color-alert: var(--fx-alert);
+  --color-safe: var(--fx-safe);
+  --color-focus: var(--fx-focus);
+
+  /* Atmosphere and destination surfaces. Rarely used as text — mostly as fills. */
+  --color-space-void: var(--fx-space-void);
+  --color-space-deep: var(--fx-space-deep);
+  --color-planet-earth: var(--fx-planet-earth);
+  --color-planet-moon: var(--fx-planet-moon);
+  --color-planet-mars: var(--fx-planet-mars);
+  --color-planet-station: var(--fx-planet-station);
+
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-data), ui-monospace, monospace;
+
+  /*
+   * Radii. Tighter than the previous 0.875rem: instruments have tighter corners than cards.
+   * Declared here rather than on :root because Tailwind must own the name to emit rounded-*.
+   */
+  --radius-panel: 0.75rem;
+  --radius-hud: 0.375rem;
+
+  /*
+   * The display scale. `hud` is the wordmark and hero numerals; `hud-sm` is the tier below
+   * it. Everything else keeps the stock Tailwind size scale so existing call sites are
+   * unaffected — these two exist because the interface had no large-format type at all.
+   */
+  --text-hud: clamp(1.875rem, 4.4vw, 3.5rem);
+  --text-hud-sm: clamp(1.375rem, 2.4vw, 1.875rem);
+
+  --animate-fade-up: fx-fade-up 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fx-fade-in 0.28s ease-out both;
+  --animate-shimmer: fx-shimmer 1.4s linear infinite;
+  --animate-breathe: fx-breathe 3.4s ease-in-out infinite;
+  --animate-typing: fx-typing 1.1s ease-in-out infinite;
+  --animate-sweep: fx-sweep 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  --animate-orbit: fx-orbit 9s linear infinite;
+  --animate-drift: fx-drift 64s ease-in-out infinite;
+  --animate-pulse-soft: fx-pulse-soft 3.6s ease-in-out infinite;
+  --animate-flame-sway: fx-flame-sway 3.2s ease-in-out infinite;
+  --animate-flame-core: fx-flame-core 2.1s ease-in-out infinite;
+  --animate-halo: fx-halo 4.2s ease-in-out infinite;
+  --animate-mote: fx-mote-drift 26s ease-in-out infinite;
+  --fx-rotate-slow: fx-rotate 48s linear infinite;
+  --fx-rotate-slower: fx-rotate 96s linear infinite;
+}
+
+/* Slow rotation for orbital elements; transform-only so it stays off the main thread. */
+@keyframes fx-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fx-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fx-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fx-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes fx-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Telemetry pulse. Slow enough to read as an instrument breathing, not a notification. */
+@keyframes fx-pulse-soft {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* Atmosphere drift. Very long and transform-only so the nebula never triggers layout. */
+@keyframes fx-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(2%, -1.5%, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-1.5%, 1.5%, 0) scale(0.97);
+  }
+}
+
+@keyframes fx-typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+@keyframes fx-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+@keyframes fx-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Flame lobes: GPU-only transforms so the animation never touches layout. */
+@keyframes fx-flame-sway {
+  0%,
+  100% {
+    transform: skewX(0deg) scaleY(1) scaleX(1);
+  }
+  25% {
+    transform: skewX(var(--flame-skew, 0deg)) scaleY(1.045) scaleX(0.985);
+  }
+  50% {
+    transform: skewX(calc(var(--flame-skew, 0deg) * -0.6)) scaleY(0.965) scaleX(1.02);
+  }
+  75% {
+    transform: skewX(calc(var(--flame-skew, 0deg) * 0.8)) scaleY(1.03) scaleX(0.995);
+  }
+}
+
+@keyframes fx-flame-core {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.07);
+  }
+}
+
+@keyframes fx-halo {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.52;
+    transform: scale(1.06);
+  }
+}
+
+/*
+ * Mote drift. Transform-only, so the whole near plane is composited and stays off the main
+ * thread. --mote-travel is set per mote so the field never moves as one sheet.
+ */
+@keyframes fx-mote-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  33% {
+    transform: translate3d(calc(var(--mote-travel, 12px) * 0.6), calc(var(--mote-travel, 12px) * -0.8), 0);
+  }
+  66% {
+    transform: translate3d(calc(var(--mote-travel, 12px) * -0.7), calc(var(--mote-travel, 12px) * 0.5), 0);
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--fx-line);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--fx-surface);
+    color: var(--fx-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--fx-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: rgb(255 255 255 / 0.28);
+    color: var(--fx-ink);
+  }
+
+  /*
+   * Display type carries the brand, so it gets the tighter tracking and no text-wrap balance —
+   * a wordmark set across two lines looks broken, not balanced.
+   */
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  /*
+   * Panel field. The default surface: one step above the canvas, a hairline, and a shadow
+   * deep enough to lift it off the atmosphere without drawing attention to itself.
+   */
+  /*
+    Alpha is deliberately lower than the surface reads as, because these panels sit in front of a
+    live 3D planet. The frosting that makes this safe lives in `@layer utilities` at the end of
+    this file, with a comment explaining why it cannot live here.
+  */
+  .fx-panel {
+    position: relative;
+    background-color: color-mix(in oklab, var(--fx-panel) 62%, transparent);
+    border: 1px solid var(--fx-line);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--fx-shadow);
+  }
+
+  /*
+   * Instrument panel. Reads as a physical gauge rather than a bordered card: a translucent
+   * surface, a lit top edge, and an inner glow. The translucency only works because the
+   * atmosphere layer sits behind it — which is why this is never paired with a solid fill.
+   */
+  .fx-instrument {
+    position: relative;
+    background-color: color-mix(in oklab, var(--fx-panel) 46%, transparent);
+    border: 1px solid var(--fx-hairline);
+    border-radius: var(--radius-panel);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--fx-brand) 22%, transparent),
+      inset 0 0 44px -24px var(--fx-glow-brand),
+      var(--fx-shadow);
+  }
+
+  /* Cyan-lit variant, for telemetry and evidence surfaces. */
+  .fx-instrument-signal {
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--fx-signal) 24%, transparent),
+      inset 0 0 44px -24px var(--fx-glow-signal),
+      var(--fx-shadow);
+  }
+
+  /* Ember-lit variant, reserved for combustion surfaces. */
+  .fx-instrument-ember {
+    background-color: color-mix(in oklab, var(--fx-ember) 5%, var(--fx-panel));
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--fx-ember) 26%, transparent),
+      inset 0 0 48px -22px var(--fx-glow-ember),
+      var(--fx-shadow);
+  }
+
+  /* A single lit segment along the top edge, used on featured panels. */
+  .fx-instrument-edge::before {
+    content: "";
+    position: absolute;
+    inset-inline: 18%;
+    top: -1px;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--fx-brand-vivid),
+      var(--fx-signal),
+      transparent
+    );
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  /*
+   * HUD surface. The key addition to the depth vocabulary: a projected readout with no fill
+   * and no full border — only a lit rule along its trailing edge. This is what lets data sit
+   * *in front of* the environment instead of inside a box. Always pair it with backdrop blur
+   * so it separates from whatever is behind it.
+   */
+  .fx-hud {
+    position: relative;
+    background-color: color-mix(in oklab, var(--fx-panel) 38%, transparent);
+    border-top: 1px solid var(--fx-hairline);
+    border-bottom: 1px solid var(--fx-hairline);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /*
+   * Frame. No surface at all — four corner brackets, drawn as eight gradients on a single
+   * pseudo-element so grouping never costs extra DOM or a filled rectangle. Used to claim
+   * space around the 3D subject without adding chrome.
+   */
+  .fx-frame {
+    position: relative;
+  }
+
+  .fx-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    --fx-frame-arm: 16px;
+    --fx-frame-weight: 1px;
+    --fx-frame-color: var(--fx-hairline-lit);
+    background:
+      linear-gradient(var(--fx-frame-color), var(--fx-frame-color)) left top /
+        var(--fx-frame-arm) var(--fx-frame-weight) no-repeat,
+      linear-gradient(var(--fx-frame-color), var(--fx-frame-color)) left top /
+        var(--fx-frame-weight) var(--fx-frame-arm) no-repeat,
+      linear-gradient(var(--fx-frame-color), var(--fx-frame-color)) right top /
+        var(--fx-frame-arm) var(--fx-frame-weight) no-repeat,
+      linear-gradient(var(--fx-frame-color), var(--fx-frame-color)) right top /
+        var(--fx-frame-weight) var(--fx-frame-arm) no-repeat,
+      linear-gradient(var(--fx-frame-color), var(--fx-frame-color)) left bottom /
+        var(--fx-frame-arm) var(--fx-frame-weight) no-repeat,
+      linear-gradient(var(--fx-frame-color), var(--fx-frame-color)) left bottom /
+        var(--fx-frame-weight) var(--fx-frame-arm) no-repeat,
+      linear-gradient(var(--fx-frame-color), var(--fx-frame-color)) right bottom /
+        var(--fx-frame-arm) var(--fx-frame-weight) no-repeat,
+      linear-gradient(var(--fx-frame-color), var(--fx-frame-color)) right bottom /
+        var(--fx-frame-weight) var(--fx-frame-arm) no-repeat;
+  }
+
+  /* Label/value pairing used by the telemetry strips and the top bar. */
+  .fx-telemetry {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+  }
+
+  .fx-telemetry-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--fx-ink-faint);
+    white-space: nowrap;
+  }
+
+  .fx-telemetry-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--fx-ink-muted);
+    white-space: nowrap;
+  }
+
+  /*
+   * Instrument readout. The large-format numeric treatment the interface previously lacked.
+   * Tabular figures and a separated unit keep a column of readings optically aligned.
+   */
+  .fx-readout {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    color: var(--fx-ink);
+  }
+
+  .fx-readout-unit {
+    margin-left: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--fx-ink-faint);
+  }
+
+  /*
+   * Keyline. A single gradient hairline used instead of a border to divide regions. Fading at
+   * both ends keeps it from reading as a box edge.
+   */
+  .fx-keyline {
+    height: 1px;
+    border: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--fx-hairline-lit) 22%,
+      var(--fx-hairline-lit) 78%,
+      transparent
+    );
+  }
+
+  /* Orbital ring drawn around a destination or active panel. */
+  .fx-orbit-ring {
+    border-radius: 999px;
+    border: 1px solid var(--fx-space-orbit);
+  }
+
+  /*
+   * Navigation. The active item is lit on its leading edge, the way a panel indicator comes on
+   * when a switch is engaged. Drawn as a pseudo-element so it never enters layout, and drawn
+   * as a flat white rule rather than a gradient — in a monochrome interface the position of
+   * the indicator is what identifies the active route, so it should not also be competing for
+   * attention with a colour transition along its length.
+   */
+  .fx-nav-link::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 2px;
+    height: 0;
+    border-radius: 0 999px 999px 0;
+    background-color: var(--fx-ink);
+    transform: translateY(-50%);
+    opacity: 0;
+    transition:
+      height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 160ms ease;
+  }
+
+  .fx-nav-link[data-active="true"]::before {
+    height: 62%;
+    opacity: 1;
+  }
+
+  .fx-nav-link[data-active="true"] {
+    box-shadow: inset 0 0 26px -14px var(--fx-glow-brand);
+  }
+
+  /* Identity mark in the rail: a small lit core, like an indicator lamp. */
+  .fx-mark {
+    background-color: color-mix(in oklab, var(--fx-ink) 10%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--fx-ink) 34%, transparent),
+      0 0 22px -10px var(--fx-glow-brand-vivid);
+  }
+
+  /* Atmospheric bloom anchored to the bottom of a scene. */
+  .fx-horizon-glow {
+    background: radial-gradient(
+      120% 100% at 50% 100%,
+      var(--fx-space-horizon) 0%,
+      transparent 62%
+    );
+  }
+
+  /* Warm bloom variant for combustion-adjacent regions. */
+  .fx-horizon-glow-ember {
+    background: radial-gradient(
+      120% 100% at 50% 100%,
+      var(--fx-space-horizon-warm) 0%,
+      transparent 64%
+    );
+  }
+
+  /*
+   * Edge vignette. Pulls the frame's edges down so the centre of the viewport is where the
+   * eye lands. Applied over the whole environment rather than per panel.
+   */
+  .fx-vignette {
+    background: radial-gradient(
+      118% 92% at 50% 42%,
+      transparent 52%,
+      var(--fx-space-vignette) 100%
+    );
+  }
+
+  .fx-panel-flat {
+    background-color: color-mix(in oklab, var(--fx-panel) 42%, transparent);
+    border: 1px solid var(--fx-line);
+    border-radius: var(--radius-panel);
+  }
+
+  .fx-panel-hover {
+    transition:
+      border-color 180ms ease,
+      background-color 180ms ease,
+      transform 180ms ease;
+  }
+
+  .fx-panel-hover:hover {
+    border-color: var(--fx-hairline-lit);
+    background-color: color-mix(in oklab, var(--fx-elevated) 70%, transparent);
+  }
+
+  .fx-glass {
+    background-color: var(--fx-glass);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+  }
+
+  /* Deeper glass for surfaces that float over the environment rather than sitting in it. */
+  .fx-glass-deep {
+    background-color: var(--fx-glass-deep);
+    backdrop-filter: blur(22px) saturate(130%);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+  }
+
+  /* Faint measurement grid — the only decorative texture inside data regions. */
+  .fx-grid-bg {
+    background-image:
+      linear-gradient(var(--fx-grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--fx-grid-line) 1px, transparent 1px);
+    background-size: 56px 56px;
+    background-position: center center;
+  }
+
+  /* Denser grid for plot surfaces, where the grid is data rather than decoration. */
+  .fx-plot-bg {
+    background-color: var(--fx-plot);
+    background-image:
+      linear-gradient(var(--fx-grid-line-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--fx-grid-line-major) 1px, transparent 1px);
+    background-size: 100% 25%, 12.5% 100%;
+    background-position: center center;
+  }
+
+  .fx-label {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fx-ink-faint);
+  }
+
+  .fx-numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .fx-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-hud);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    padding: 0.5625rem 0.875rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      transform 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .fx-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /*
+   * Primary action. Flat white on black with no gradient and no coloured glow — this is the
+   * one place in the interface that inverts, and an inversion reads as emphasis without
+   * needing a hue to do it.
+   */
+  .fx-btn-primary {
+    background-color: var(--fx-ink);
+    color: var(--fx-depth-void);
+    box-shadow: 0 8px 24px -14px rgb(255 255 255 / 0.35);
+  }
+
+  .fx-btn-primary:hover:not(:disabled) {
+    background-color: #ededed;
+    box-shadow: 0 12px 30px -12px rgb(255 255 255 / 0.45);
+    transform: translateY(-1px);
+  }
+
+  .fx-btn-outline {
+    border-color: rgb(255 255 255 / 0.45);
+    color: var(--fx-ink);
+    background-color: color-mix(in oklab, var(--fx-panel) 40%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .fx-btn-outline:hover:not(:disabled) {
+    border-color: var(--fx-ink);
+    color: var(--fx-ink);
+    background-color: color-mix(in oklab, var(--fx-ink) 10%, transparent);
+  }
+
+  .fx-btn-ghost {
+    color: var(--fx-ink-muted);
+    background-color: transparent;
+  }
+
+  .fx-btn-ghost:hover:not(:disabled) {
+    color: var(--fx-ink);
+    background-color: color-mix(in oklab, var(--fx-elevated) 80%, transparent);
+  }
+
+  .fx-input {
+    width: 100%;
+    background-color: color-mix(in oklab, var(--fx-elevated) 62%, transparent);
+    border: 1px solid var(--fx-line);
+    border-radius: var(--radius-hud);
+    padding: 0.5625rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--fx-ink);
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .fx-input::placeholder {
+    color: var(--fx-ink-faint);
+  }
+
+  .fx-input:focus {
+    outline: none;
+    border-color: var(--fx-ink);
+    box-shadow: 0 0 0 3px rgb(255 255 255 / 0.18);
+  }
+
+  .fx-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    border-radius: 999px;
+    border: 1px solid var(--fx-line);
+    background-color: color-mix(in oklab, var(--fx-elevated) 60%, transparent);
+    padding: 0.1875rem 0.5625rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--fx-ink-muted);
+    white-space: nowrap;
+  }
+
+  /* Range inputs use a filled track; --range-fill is set inline per control. */
+  .fx-range {
+    height: 0.375rem;
+    border-radius: 999px;
+    background-image: linear-gradient(
+      to right,
+      var(--fx-ink) 0 var(--range-fill, 0%),
+      var(--fx-elevated) var(--range-fill, 0%) 100%
+    );
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .fx-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 999px;
+    background-color: var(--fx-ink);
+    border: 2px solid var(--fx-depth-void);
+    cursor: grab;
+    box-shadow: 0 0 0 1px var(--fx-line-strong);
+  }
+
+  .fx-range::-webkit-slider-thumb:active {
+    cursor: grabbing;
+  }
+
+  .fx-range::-moz-range-thumb {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 999px;
+    background-color: var(--fx-ink);
+    border: 2px solid var(--fx-depth-void);
+    cursor: grab;
+    box-shadow: 0 0 0 1px var(--fx-line-strong);
+  }
+
+  .fx-range:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .fx-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--fx-line-strong) transparent;
+  }
+
+  .fx-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .fx-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .fx-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--fx-line-strong);
+    border-radius: 999px;
+  }
+
+  .fx-skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: color-mix(in oklab, var(--fx-elevated) 80%, transparent);
+  }
+
+  .fx-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--fx-ink) 8%, transparent),
+      transparent
+    );
+    animation: var(--animate-shimmer);
+  }
+}
+
+@layer utilities {
+  .fx-no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .fx-no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /*
+   * Atmosphere utilities. The starfield is a tiled background-image rather than DOM nodes or
+   * a canvas, so it costs one paint and never enters the animation loop.
+   */
+  .fx-starfield {
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, var(--fx-space-star) 50%, transparent 50%),
+      radial-gradient(1px 1px at 68% 9%, var(--fx-space-star-dim) 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 34% 62%, var(--fx-space-star) 50%, transparent 50%),
+      radial-gradient(1px 1px at 82% 47%, var(--fx-space-star-dim) 50%, transparent 50%),
+      radial-gradient(1px 1px at 51% 84%, var(--fx-space-star-dim) 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 91% 78%, var(--fx-space-star) 50%, transparent 50%),
+      radial-gradient(1px 1px at 24% 38%, var(--fx-space-star-dim) 50%, transparent 50%);
+    background-size: 620px 620px;
+    background-repeat: repeat;
+  }
+
+  /*
+   * Brightest shell, painted in front of the 3D planet so the sky survives the globe filling the
+   * frame. A third tile size — 380px against the far field's 620px and the near field's 940px —
+   * keeps all three from lining up into a visible grid.
+   */
+  .fx-starfield-drift {
+    background-image:
+      radial-gradient(1px 1px at 16% 24%, var(--fx-space-star) 50%, transparent 50%),
+      radial-gradient(1.6px 1.6px at 58% 14%, var(--fx-space-star) 50%, transparent 50%),
+      radial-gradient(1px 1px at 84% 34%, var(--fx-space-star-dim) 50%, transparent 50%),
+      radial-gradient(1.4px 1.4px at 38% 72%, var(--fx-space-star-dim) 50%, transparent 50%),
+      radial-gradient(1px 1px at 72% 84%, var(--fx-space-star) 50%, transparent 50%),
+      radial-gradient(1.8px 1.8px at 26% 52%, var(--fx-space-star-dim) 50%, transparent 50%);
+    background-size: 380px 380px;
+    background-repeat: repeat;
+  }
+
+  /* Finer, dimmer shell that sits in front of the main starfield for parallax. */
+  .fx-starfield-near {
+    background-image:
+      radial-gradient(1px 1px at 22% 62%, var(--fx-space-star-dim) 50%, transparent 50%),
+      radial-gradient(1.2px 1.2px at 74% 28%, var(--fx-space-star) 50%, transparent 50%),
+      radial-gradient(1px 1px at 45% 88%, var(--fx-space-star-dim) 50%, transparent 50%),
+      radial-gradient(1.3px 1.3px at 88% 66%, var(--fx-space-star-dim) 50%, transparent 50%);
+    background-size: 940px 940px;
+    background-repeat: repeat;
+  }
+
+  /*
+   * Neutral depth washes. Two, not three: with the hue gone there is nothing left to tell the
+   * third wash apart from the second, and an atmosphere layer with fewer, larger gradients
+   * reads as depth rather than as a tint.
+   */
+  .fx-nebula-deep {
+    background-image: radial-gradient(
+      64% 54% at 20% 8%,
+      var(--fx-space-nebula-deep) 0%,
+      transparent 70%
+    );
+  }
+
+  .fx-nebula-lift {
+    background-image: radial-gradient(
+      58% 48% at 86% 6%,
+      var(--fx-space-nebula-lift) 0%,
+      transparent 72%
+    );
+  }
+
+  /* Slow orbital rotation, transform-only. */
+  .fx-rotate-slow {
+    animation: var(--fx-rotate-slow);
+  }
+
+  .fx-rotate-slower {
+    animation: var(--fx-rotate-slower);
+  }
+
+  /*
+   * Compact mode. Panels take their padding from call-site `p-*` utilities, so this single
+   * opt-in override is declared with `!important` to win over them; `:where()` keeps the
+   * selector's own specificity at zero so only the data attribute decides.
+   */
+  [data-compact="true"] :where(.fx-panel, .fx-panel-flat, .fx-instrument) {
+    padding: var(--fx-card-pad-compact) !important;
+  }
+}
+
+/* Recharts injects its own focus ring on the surface element; ours is enough. */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Reduced motion also removes the orbital drift. Rotation is transform-only so this stays
+ * cheap, but honouring the preference matters more than the effect.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .fx-rotate-slow,
+  .fx-rotate-slower {
+    animation: none !important;
+  }
+}
+
+@layer utilities {
+  /*
+   * Frosting for panels that sit in front of the live planet.
+   *
+   * These live in `@layer utilities` rather than beside their fills in `@layer components` because
+   * the CSS minifier drops an unprefixed `backdrop-filter` written there and emits only the
+   * `-webkit-` form, which modern Chromium ignores — verified by inspecting the built stylesheet,
+   * where component-layer rules carried 11 prefixed declarations and no unprefixed one. This layer
+   * preserves both, so the blur actually reaches the browser.
+   *
+   * The blur is what makes the reduced panel alpha safe: it keeps text contrast steady while the
+   * planet turns underneath, so transparency costs legibility nothing.
+   */
+  .fx-panel {
+    backdrop-filter: blur(14px) saturate(125%);
+  }
+
+  .fx-instrument {
+    backdrop-filter: blur(16px) saturate(130%);
+  }
+
+  .fx-panel-flat {
+    backdrop-filter: blur(14px) saturate(125%);
+  }
+
+  /*
+   * Open veil.
+   *
+   * The dashboard hero uses this instead of `fx-instrument`. That variant is translucent, but a
+   * dashboard full of lit translucent panels stops reading as a window onto anything — the point
+   * of the live planet behind it is that you can see it. This is the same surface at a fraction of
+   * the alpha, with only enough blur to stop the WebGL noise behind the type.
+   *
+   * Text still needs help, so the hero pairs this with `fx-veil-scrim`, which darkens the copy
+   * column only and leaves the subject half of the panel open to the environment.
+   */
+  .fx-veil {
+    position: relative;
+    background-color: color-mix(in oklab, var(--fx-panel) 14%, transparent);
+    border: 1px solid var(--fx-line);
+    border-radius: var(--radius-panel);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--fx-ember) 20%, transparent),
+      var(--fx-shadow);
+    backdrop-filter: blur(3px) saturate(115%);
+  }
+
+  /* Directional scrim: dense under the copy, gone by the subject plane. */
+  .fx-veil-scrim {
+    background-image: linear-gradient(
+      100deg,
+      color-mix(in oklab, var(--fx-depth-void) 88%, transparent) 0%,
+      color-mix(in oklab, var(--fx-depth-void) 62%, transparent) 34%,
+      color-mix(in oklab, var(--fx-depth-void) 18%, transparent) 56%,
+      transparent 72%
+    );
+  }
+
+  /*
+   * Environment plate.
+   *
+   * The per-world thumbnails on the dashboard. A single gradient disc stands in for the body, with
+   * a lit limb rather than a flat fill, so four small circles read as four different places instead
+   * of four differently-coloured dots.
+   */
+  .fx-plate-body {
+    background-image: radial-gradient(
+      78% 78% at 32% 26%,
+      var(--plate-lit) 0%,
+      var(--plate-mid) 44%,
+      var(--plate-shadow) 100%
+    );
+  }
+
+  /* Inner rim light, the detail that separates a sphere from a filled circle. */
+  .fx-plate-limb {
+    background-image: radial-gradient(
+      78% 78% at 32% 26%,
+      transparent 62%,
+      color-mix(in oklab, var(--plate-limb) 55%, transparent) 86%,
+      color-mix(in oklab, var(--plate-limb) 12%, transparent) 100%
+    );
+  }
+
+}
+
+@keyframes fx-plate-drift {
+  0%,
+  100% {
+    transform: scaleY(1) scaleX(1);
+  }
+  50% {
+    transform: scaleY(1.03) scaleX(0.99);
+  }
+}
