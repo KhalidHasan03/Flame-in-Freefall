@@ -1,17 +1,27 @@
 import Link from "next/link";
-import { ArrowUpRight, Compass, Flame, GitCompareArrows, MessageSquareQuote } from "lucide-react";
-import SectionHeader from "@/components/shared/SectionHeader";
+import { ArrowUpRight, Compass, Flame, GitCompareArrows, ShieldCheck } from "lucide-react";
 
 /**
- * The four places worth going next.
+ * The four routes worth leaving this page for.
  *
- * Replaces a set of destination panels that each duplicated their route's own page header. The
- * dashboard's job is to route the reader, and a link with one sentence saying what is behind it
- * does that in one line where a preview panel took a screen.
+ * These were four cards, each with a label, a title and a sentence of prose — four sentences of
+ * marketing copy standing between a reader and the thing being described. On a page that is now
+ * little more than six numbers, that was the largest remaining block and the least load-bearing,
+ * so each card is reduced to what is needed to click it: a name, one counted figure, an arrow.
  *
- * Every figure is passed in from the server component that renders this, so each card's number
- * comes from the same loaded response as the rest of the page and from the same constants the
- * destination route itself uses. Nothing here recounts anything locally.
+ * The sentences are not lost, they are demoted. Every route states what it contains in its own
+ * page header, one navigation step away, and a reader who needs the pitch is going there anyway.
+ * Repeating it here meant maintaining the same sentence in two places and being wrong in one.
+ *
+ * Each figure is passed in from the server component that renders this, so the numbers come from
+ * the same loaded response as the tiles above and from the same constants the destination route
+ * itself uses. Nothing is recounted locally.
+ *
+ * `/insights` rather than `/firewise` in the fourth slot. Every other route is a tool for working
+ * with the data; this one is where the evidence behind that data is graded, where the conflicts
+ * are stated and where the five open problems from the tile above are written out in full. A
+ * reader who counts five problems on the way in should be able to leave this page to read them
+ * without passing through a fourth tool first.
  */
 const DESTINATIONS = [
   {
@@ -19,102 +29,67 @@ const DESTINATIONS = [
     href: "/explore",
     icon: Compass,
     label: "Explore",
-    title: "The full evidence base",
-    detail: "Every record, filterable by destination, program, fuel, evidence grade and gravity.",
-    metric: "records",
+    figure: "records",
   },
   {
     id: "flame-lab",
     href: "/flame-lab",
     icon: Flame,
     label: "Flame Lab",
-    title: "Interactive combustion model",
-    detail: "Drive gravity, oxygen, pressure, temperature, airflow and fuel, and watch the envelope respond.",
-    metric: "controls",
+    figure: "controls",
   },
   {
     id: "compare",
     href: "/compare",
     icon: GitCompareArrows,
     label: "Compare",
-    title: "Side-by-side matrix",
-    detail: "Hold records against each other on any measured variable and score them for a mission.",
-    metric: "fields",
+    figure: "fields",
   },
   {
-    id: "firewise",
-    href: "/firewise",
-    icon: MessageSquareQuote,
-    label: "Firewise",
-    title: "Evidence-first assistant",
-    detail: "Ask about the loaded records and get an answer with its sources attached.",
-    metric: null,
+    id: "insights",
+    href: "/insights",
+    icon: ShieldCheck,
+    label: "Safety & evidence",
+    figure: "problems",
   },
 ];
 
-export default function QuickNav({ recordCount, variableCount, controlCount, fieldCount }) {
-  const metrics = {
-    records: [
-      { value: recordCount, unit: "records loaded" },
-      { value: variableCount, unit: "variables per record" },
-    ],
-    controls: [{ value: controlCount, unit: "live controls" }],
-    fields: [{ value: fieldCount, unit: "comparison fields" }],
+export default function QuickNav({ recordCount, variableCount, controlCount, fieldCount, problemCount }) {
+  const figures = {
+    records: `${recordCount} records`,
+    controls: `${controlCount} controls`,
+    fields: `${fieldCount} fields`,
+    problems: `${problemCount} open`,
   };
 
   return (
-    <section aria-labelledby="quick-nav-heading" className="space-y-4">
-      <SectionHeader
-        id="quick-nav-heading"
-        eyebrow="Continue"
-        title="Where to go next"
-        description="Four routes into the product. Nothing on this page duplicates them."
-      />
+    <nav aria-label="Primary routes" className="space-y-2">
+      <p className="fx-label">Continue</p>
 
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {DESTINATIONS.map((destination) => {
           const Icon = destination.icon;
-          const figures = destination.metric ? metrics[destination.metric] : null;
 
           return (
             <li key={destination.id}>
               <Link
                 href={destination.href}
-                className="fx-panel fx-panel-hover group flex h-full flex-col gap-2 p-4"
+                className="fx-panel fx-panel-hover group flex items-center gap-2 px-3 py-2.5"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="fx-label flex items-center gap-1.5 text-ink">
-                    <Icon className="size-3.5" aria-hidden="true" />
-                    {destination.label}
-                  </span>
-                  <ArrowUpRight
-                    className="size-3.5 shrink-0 text-ink-faint transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ink"
-                    aria-hidden="true"
-                  />
-                </div>
-
-                <p className="text-sm font-semibold leading-snug text-ink">{destination.title}</p>
-                <p className="text-xs leading-relaxed text-ink-muted">{destination.detail}</p>
-
-                {figures ? (
-                  <p className="fx-telemetry mt-auto flex-wrap gap-x-3 pt-2 text-ink-faint">
-                    {figures.map((figure) => (
-                      <span key={figure.unit} className="fx-telemetry">
-                        <span className="fx-numeric font-bold text-ink">{figure.value}</span>
-                        <span className="fx-telemetry-label">{figure.unit}</span>
-                      </span>
-                    ))}
-                  </p>
-                ) : (
-                  <p className="fx-telemetry mt-auto pt-2 text-ink-faint">
-                    <span className="fx-telemetry-label">Sources attached to every claim</span>
-                  </p>
-                )}
+                <Icon className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+                <span className="text-xs font-semibold text-ink">{destination.label}</span>
+                <span className="fx-telemetry-value ml-auto text-ink-faint">
+                  {figures[destination.figure]}
+                </span>
+                <ArrowUpRight
+                  className="size-3.5 shrink-0 text-ink-faint transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ink"
+                  aria-hidden="true"
+                />
               </Link>
             </li>
           );
         })}
       </ul>
-    </section>
+    </nav>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Sparkles, User } from "lucide-react";
+import { ExternalLink, ShieldAlert, Sparkles, User } from "lucide-react";
 import { ConfidenceBadge } from "@/components/shared/StatusBadges";
 import PrototypeBadge from "@/components/shared/PrototypeBadge";
 import { PROTOTYPE_LABELS } from "@/lib/constants";
@@ -36,6 +36,36 @@ export function EvidenceChips({ ids, className = "" }) {
   );
 }
 
+/**
+ * Safety notice, shown in place of a research answer.
+ *
+ * Its own variant rather than a `caveat` on a normal bubble, for three reasons that each would be
+ * wrong if merged:
+ *
+ *   - the "Mock AI response" badge must not appear, because no model produced this and implying
+ *     otherwise would be exactly the false attribution the rest of the prototype goes to such
+ *     lengths to avoid;
+ *   - `EvidenceChips` must not render at all. With `evidence: []` it would print "no supporting
+ *     records — treat this as a research gap", which is a false statement: this is not a gap in
+ *     the literature, it is a refusal to answer;
+ *   - it must not be styled as an ordinary answer, because a reader who is actually mid-emergency
+ *     should not have to hunt for the difference between prose and a warning.
+ */
+function EmergencyNotice({ label, text }) {
+  return (
+    <div
+      role="note"
+      className="rounded-[var(--radius-panel)] border border-ember/45 bg-ember/[0.09] px-3 py-2.5"
+    >
+      <p className="flex items-center gap-1.5 text-xs font-bold tracking-[0.06em] text-ember uppercase">
+        <ShieldAlert className="size-3.5 shrink-0" aria-hidden="true" />
+        {label}
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-ink">{text}</p>
+    </div>
+  );
+}
+
 export default function MessageBubble({ message }) {
   const isUser = message.role === "user";
 
@@ -47,6 +77,19 @@ export default function MessageBubble({ message }) {
         </span>
         <div className="min-w-0 flex-1 rounded-[var(--radius-panel)] rounded-tl-sm border border-line bg-elevated/50 px-3 py-2">
           <p className="text-xs leading-relaxed text-ink">{message.text}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (message.kind === "emergency") {
+    return (
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-ember/15">
+          <ShieldAlert className="size-3 text-ember" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <EmergencyNotice label={message.label} text={message.text} />
         </div>
       </div>
     );

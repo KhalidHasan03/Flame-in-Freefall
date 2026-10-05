@@ -1,15 +1,7 @@
 import { getDashboardData } from "@/lib/api/dashboard";
-import {
-  APP_NAME,
-  CHALLENGE_NAME,
-  COMPARISON_FIELDS,
-  DEFAULT_FLAME_PARAMS,
-  TEAM_NAME,
-} from "@/lib/constants";
+import { APP_NAME, COMPARISON_FIELDS, DEFAULT_FLAME_PARAMS, TEAM_NAME } from "@/lib/constants";
 import PageHeader from "@/components/shell/PageHeader";
-import FeaturedInsight from "@/components/dashboard/FeaturedInsight";
 import MetricStrip from "@/components/dashboard/MetricStrip";
-import MissionOverview from "@/components/dashboard/MissionOverview";
 import QuickNav from "@/components/dashboard/QuickNav";
 
 export const metadata = {
@@ -20,65 +12,50 @@ export const metadata = {
 /**
  * The dashboard.
  *
- * Five blocks, in the order a reader actually needs them:
+ * Three blocks: what this is, what the dataset contains, and where to go next. Roughly three
+ * hundred pixels of scroll, all of it above the fold on a laptop.
  *
- *   1  header       what this is, and the disclosure that it is demonstration data
- *   2  overview     the active environment and the state of the evidence base against it
- *   3  lead record  one finding, in full, chosen by a stated rule
- *   4  scale        four counted figures, so the size of the base is known before it is explored
- *   5  quick nav    the four routes worth taking next
+ * It was seven blocks and about two thousand pixels. What came off it, and why:
  *
- * What came off this page, and why:
+ *   Research prompt       →  /firewise, which is in the primary nav. It was the largest element
+ *                            on the page, above the fold, for one input field.
+ *   Environment overview  →  /mission-lab. The mission selector renders there too, and since
+ *     + flame envelope       neither this block nor /mission-lab persists a mission id — there is
+ *     + readouts             no mission key in `STORAGE_KEYS` and no mission provider — the
+ *                            overview was holding local state that went nowhere when the reader
+ *                            followed a link.
+ *   Lead record           →  /explore, which ranks the same records for a reader who is
+ *   + "also worth reading"     actually choosing between them. On a summary page it was the
+ *                            single largest finding rendered at full length, above the count of
+ *                            how many findings exist.
  *
- *   Environment plates     →  /mission-lab, where the destination selector that drives them lives.
- *                            On the dashboard they were four static cards restating that the same
- *                            flame behaves differently at different gravity, which is a claim, not
- *                            a dataset.
- *   Moon / Mars comparison →  /mission-lab, with the per-mission detail those two rows summarise.
- *   Coverage by program     →  /insights, beside the risk posture they are meant to be read against.
- *   Risk factors           →  /insights.
- *   Recent insights list   →  replaced by the single lead record, and the rest of the list stays
- *                            on /insights.
- *   Live chamber + sliders →  /flame-lab. Moving them is the point of that route, and on the
- *                            dashboard they occupied the largest region on the page while leading
- *                            nowhere.
+ * Nothing was lost that is not better placed. Every route removed from `/` remains in the primary
+ * navigation, and the counts that used to sit at the bottom of the page are now the page.
  *
- * No capability was removed. Every control, filter and readout that left the dashboard is still
- * reachable from the block above that redirects to it, and `/` is now short enough to be read in
- * one screen.
+ * This is deliberately a count summary and not an overview. A count is cheap to verify and cheap
+ * to maintain — every figure comes from `lib/api/dashboard.js`, which derives it from the loaded
+ * records — whereas prose about the data is a claim that needs re-checking whenever the data
+ * changes. For a prototype whose dataset is about to be replaced by a real API response, the
+ * first of those two is the better thing to have on the front page.
  */
 export default async function DashboardPage() {
-  const { missions, dataset, featured } = await getDashboardData();
+  const { dataset } = await getDashboardData();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
-        eyebrow={`${TEAM_NAME} • ${CHALLENGE_NAME}`}
-        title={`${APP_NAME} research dashboard`}
-        description="A central index of microgravity combustion research, with evidence grading, mission relevance scoring and an evidence-first assistant. Everything rendered here is demonstration data."
-        telemetry={
-          <>
-            <div className="fx-telemetry">
-              <span className="fx-telemetry-label">Records</span>
-              <span className="fx-telemetry-value">{dataset.records} loaded</span>
-            </div>
-            <div className="fx-telemetry">
-              <span className="fx-telemetry-label">Environments</span>
-              <span className="fx-telemetry-value">{dataset.destinations} tracked</span>
-            </div>
-          </>
-        }
+        variant="compact"
+        eyebrow={`${TEAM_NAME} • ${APP_NAME}`}
+        title="Dashboard"
+        description="Microgravity fire-safety research index. Every figure is counted from the records loaded in this build — demonstration data, not a verified archive."
       />
-
-      <MissionOverview missions={missions} featured={featured} />
-
-      <FeaturedInsight record={featured} />
 
       <MetricStrip dataset={dataset} />
 
       <QuickNav
         recordCount={dataset.records}
         variableCount={dataset.variablesPerRecord}
+        problemCount={dataset.problems}
         /*
           Counted from the parameter object rather than written as a literal. `FlameControls`
           renders one control per key of this object, so the two cannot drift — a figure that

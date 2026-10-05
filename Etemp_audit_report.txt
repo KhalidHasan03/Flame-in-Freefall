@@ -1,0 +1,270 @@
+FLARENEXUS CODEBASE AUDIT - READ-ONLY INVESTIGATION
+=====================================================
+Location: E:\Cosmic-Nexus
+Date: Mon Oct 05 2026
+Platform: win32 | Git repo: no
+
+All file paths are absolute. Code snippets quoted exactly as found. Absences explicitly noted.
+
+
+A. EXPLORE
+----------
+
+1. app/explore/page.js (E:\Cosmic-Nexus\app\explore\page.js)
+- Lines 1-32. Async server component.
+- Imports: getExperiments, getExperimentFacets (from @/lib/api/experiments), getMissions (@/lib/api/missions), PROTOTYPE_LABELS, PageHeader, ExplorerView.
+- Data fetching: await Promise.all([getExperiments(), getExperimentFacets(), getMissions()]).
+- Passes experiments, facets, missions to ExplorerView. Metadata defined (lines 7-10).
+
+2. components/explore/ExplorerView.jsx (E:\Cosmic-Nexus\components\explore\ExplorerView.jsx)
+- Lines 1-255. Client component ("use client").
+- Imports: useMemo, useState; icons Filter, Search, SearchX, X; EXPLORE_PAGE_SIZE, PROTOTYPE_LABELS, SORT_OPTIONS; filterExperiments, scoreExperiment, sortExperiments (@/lib/calculations); Button, ChannelLabel, EmptyState, Panel, PrototypeNotice, Select (@/shared); ExperimentCard.
+- State: query (string), filters (object, defaults EMPTY_FILTERS), sort (string default "relevance"), page (number default 1).
+- EMPTY_FILTERS keys (line 15-24): program, fuel, topic, type, evidence, gravity, airflow, mission - all "all" default.
+- GRAVITY_BANDS (26-32): all, microgravity (μg), low (0.001–0.5g), partial (0.5–1g), ground (1g).
+- Filter controls (Select components): Programme (facets.programs), Fuel (facets.fuels as {value,label}), Topic (facets.topics), Experiment type (facets.types), Gravity band (GRAVITY_BANDS), Airflow (hardcoded ["Low","Medium","High"]), Evidence level (["High","Medium","Limited"]), Environment/Mission (missions.map m.id/m.name).
+- Search: input type="search" id="explore-search" (148-159), updates query and resets page to 1.
+- Sorting: select id="explore-sort" with SORT_OPTIONS (165-177). SORT_OPTIONS from constants: relevance, recent, evidence strength, mission relevance (see constants later).
+- Filtering/sorting execution (51-54): useMemo computes filtered = filterExperiments(experiments, {query, filters, mission}) where mission = filters.mission==='all'?null:filters.mission; returns sortExperiments(filtered, sort, mission). Both from @/lib/calculations.
+- Pagination: pageCount = ceil(results.length/EXPLORE_PAGE_SIZE), safePage clamped, visible = slice((safePage-1)*EXPLORE_PAGE_SIZE, safePage*EXPLORE_PAGE_SIZE). Buttons Previous/Next (229-248), disabled at boundaries.
+- URL/query-param state sync: NOT implemented. No useSearchParams, no router.push with query, no reading params on mount. State is purely client-side React state.
+- Is it client-side over the full dataset? Yes - experiments array passed from server (all experiments from getExperiments()) is filtered/sorted/paginated entirely client-side in memory via filterExperiments/sortExperiments. No server-side filtering based on URL params.
+
+3. components/explore/ExperimentCard.jsx (E:\Cosmic-Nexus\components\explore\ExperimentCard.jsx)
+- Lines 1-87. Client component. Renders article with FlameThumbnail, SaveButton (bucket "experiments", item includes id/title/program/topic), Link to /experiments/[id], Badge program, EvidenceBadge (showLabel false), title Link, keyFinding (clamp-3), dl shows Gravity and Date (uses experiment.gravity/variables.gravity, formatDate), relevance display, CompareToggle compact, Open Link with aria-label `Open ${experiment.id}`.
+
+4. lib/api/experiments.js (E:\Cosmic-Nexus\lib\api\experiments.js)
+- Lines 1-70. Exports:
+  - getExperiments() - async, returns request("experiments", () => experiments) where experiments imported from @/data/experiments
+  - getExperiment(id) - async, finds by id or null
+  - getRelatedExperiments(id) - async, finds experiment, returns declared relatedIds or fallback by topic/fuel (slice 0,3)
+  - getExperimentSources(id) - async, gets experiment then getSourcesForExperiment
+  - getExperimentTimeline(id) - async, getTimelineForExperiment(id)
+  - getExperimentDetail(id) - async, returns {experiment, sources, timeline, related: getExperimentsByIds(experiment.relatedIds)} or null
+  - getExperimentIds() - async, maps to ids
+  - getExperimentFacets() - async, builds programs (unique sorted), fuels as Map byLabel set(experiment.fuel, experiment.fuelLabel) -> [{value,label}], topics unique sorted, types unique sorted
+- Also exports experiments as mockExperiments.
+- Synchronous/mock vs async: All functions are async and go through request() from ./client. With API_CONFIG.USE_MOCKS true (see client), request returns resolveMock() synchronously (the callback executes and returns value) - so the result is returned immediately from the async function in mock mode (no network delay). The function signatures are async regardless. So: mock path is effectively synchronous return wrapped in async; non-mock path is truly async (fetch). The API surface is async.
+
+B. COMPARE
+----------
+
+1. app/compare/page.js (E:\Cosmic-Nexus\app\compare\page.js)
+- Lines 1-25. Async server component. Imports getExperiments, MAX_COMPARISON_SIZE, PageHeader, CompareView. Fetches all experiments, passes to CompareView. Metadata title "Compare", description mentions up to 3.
+
+2. components/compare/CompareView.jsx (E:\Cosmic-Nexus\components\compare\CompareView.jsx)
+- Lines 1-206. Client component. Uses useCompare() from @/lib/context/CompareProvider (line 9). Gets {ids, remove, clear, add, max}. Also useRouter.
+- Selected experiments: useMemo maps ids -> find experiment by id, filters Boolean (93-96). So resolves records by id lookup in full experiments list passed as prop.
+- Summary: buildDifferenceSummary(selected) (97). Oxygen gap: getOxygenDifference(selected) (98). Both from @/lib/calculations.
+- Empty state when selected.length===0 (100-113) - links to /explore.
+- Tray shows selected chips with id and remove button (aria-label `Remove ${id} from comparison`) (118-141). Shows count/max and Clear button.
+- If selected.length < 2: shows AddPicker (144-154). AddPicker filters experiments not in selected, matches query against id/title/program (substring match case-insensitive), shows up to 6 matches, calls onAdd(experiment.id).
+- If >=2: shows difference summary panel (156-177) with text summary, oxygen spread badge if present, PrototypeNotice. Then CompareTable (179-184). If selected.length < max, shows AddPicker again (186-193).
+- Max items: from useCompare().max = MAX_COMPARISON_SIZE (see constants MAX_COMPARISON_SIZE=3). Compare context enforces cap (add/toggle prevent adding when >= max). UI also states "up to 3" and "Comparison is full at 3 experiments" in AddPicker when remaining<=0.
+
+3. CompareTable.jsx (E:\Cosmic-Nexus\components\compare\CompareTable.jsx)
+- Lines 1-96. Builds rows via buildComparisonRows(experiments) (line 12). Renders DataTable with minWidth="min-w-[860px]". Columns: Field (w-44) + one column per experiment showing id, title, EvidenceBadge. For each row: if differs (row.difference true) and distinct values across cells, cell gets bg-ember/[0.07] and shows Badge "differs" (non-color-only indicator). Exports CompareTableSkeleton and RemoveColumnButton.
+
+4. lib/context/CompareProvider.jsx (E:\Cosmic-Nexus\lib\context\CompareProvider.jsx)
+- Lines 1-104. Client context using usePersistentState(STORAGE_KEYS.compare, EMPTY_IDS). Reads stored list, memoizes ids = stored.slice(0, MAX_COMPARISON_SIZE) (trim on read). Exposes: ids, count, max: MAX_COMPARISON_SIZE, isFull, isSelected(id), add(id), remove(id), toggle(id), clear(), reorder(from,to). add/toggle return outcome string ("added"/"present"/"full"/"removed") but caller may ignore; enforce cap (if list.length>=max return list unchanged with outcome "full"). Persistence: via usePersistentState (localStorage under STORAGE_KEYS.compare).
+- How selection managed: array of experiment ids in state (persisted). Max 3. Can add/remove/toggle/clear/reorder. Records resolved by id lookup in experiments array passed to CompareView.
+- Columns/fields compared: CompareTable uses buildComparisonRows from calculations; buildComparisonRows iterates COMPARISON_FIELDS (from constants) and reads fields via readField. COMPARISON_FIELDS (from constants.js lines ~170-184): objective, program, fuel, gravity(number unit g tol 0.05), oxygen(number % tol 0.6 dec 1), pressure(number kPa tol 3 dec 1), flow(text), temperature(number °C tol 2 dec 0), flameBehavior, flameSpread, extinction, keyConclusion.
+- Limits/overflow: max 3 (MAX_COMPARISON_SIZE). Provider trims stored to cap. AddPicker prevents adding when full. UI disables adding past cap.
+
+Key constants (from earlier read): MAX_COMPARISON_SIZE=3 (line ~193 in constants.js), EXPLORE_PAGE_SIZE=9.
+
+C. SAVED
+--------
+
+1. app/saved/page.js (E:\Cosmic-Nexus\app\saved\page.js)
+- Lines 1-20. Server component (no "use client"). Renders PageHeader and SavedView.
+
+2. components/saved/SavedView.jsx (E:\Cosmic-Nexus\components\saved\SavedView.jsx)
+- Lines 1-167. Client component. Uses useSaved() and useCompare(). Gets {saved, remove, clearBucket, clearAll, total}, and {add, max} from compare.
+- Buckets rendered: Experiments, Insights, Comparisons (conditional), Saved answers (conditional). Each bucket uses Bucket component (lines 16-34): renders if items.length>0, shows count, hint, Clear button, renders items via render prop.
+- Experiments bucket items (saved.experiments): stored objects. Render shows id, Link to /experiments/[id] with title, topic Badge if present, Compare button calls add(item.id), Remove calls remove("experiments", item.id).
+- Insights bucket: shows id, title text, topic Badge, Remove.
+- Comparisons bucket: shows title, renders chips for (item.ids ?? []) as Links to /experiments/[id].
+- Answers bucket: shows question/title, text truncated to 180 chars, Remove.
+- Empty state when total===0 (41-54) links to /explore.
+- Storage note shown: "Stored in this browser only." (line 62). Also footer note about comparison max 3.
+
+3. lib/context/SavedProvider.jsx (E:\Cosmic-Nexus\lib\context\SavedProvider.jsx)
+- Lines 1-98. Client context. Defines EMPTY = {experiments:[], insights:[], comparisons:[], answers:[]} and BUCKETS (4 buckets). Each bucket stored separately via usePersistentState with keys: STORAGE_KEYS.savedExperiments, savedInsights, savedComparisons, savedAnswers.
+- saved = useMemo combining all 4. total = sum of lengths. isSaved(bucket,id) checks saved[bucket] includes entry with that id.
+- toggle(bucket,item): if set exists, replaces list: if item.id in list -> filter out (remove), else prepend [item, ...list] (add to front).
+- remove(bucket,id), clearBucket(bucket), clearAll() clears all 4 buckets.
+- What stored per item: depends on caller. SaveButton is used (see below) - when saving experiments from ExperimentCard, it passes {id,title,program,topic} (line 25-31 in ExperimentCard). So for experiments bucket, items are objects like {id, title, program, topic}. For other buckets, structure varies by caller (InsightsView/SavedView show different fields).
+
+4. components/shared/SaveButton.jsx (E:\Cosmic-Nexus\components\shared\SaveButton.jsx)
+- Lines 1-51. Client component. Uses useSaved() {isSaved,toggle}. Props: bucket, item, labelKey="title", size="md", showLabel=false, className. Computes name = item[labelKey] ?? item.id, saved = isSaved(bucket, item.id). On click calls toggle(bucket,item) and sets aria-live polite announcement ("Removed..." or "Saved..."). Renders IconButton with Bookmark/BookmarkCheck, aria-pressed={saved}, label for accessibility.
+- Persistence: real client-side persistence via usePersistentState (localStorage). No server calls. Data stays in browser only (as stated in UI).
+
+Buckets defined: experiments, insights, comparisons, answers (4 buckets). Real persistence (localStorage). Empty state handled. What stored per item varies by bucket/caller as above.
+
+D. SETTINGS
+-----------
+
+1. app/settings/page.js (E:\Cosmic-Nexus\app\settings\page.js)
+- Lines 1-20. Server component. Renders PageHeader and SettingsContent.
+
+2. components/settings/SettingsContent.jsx (E:\Cosmic-Nexus\components\settings\SettingsContent.jsx)
+- Lines 1-68. Client component. Uses useSettings() {settings, update, reset}.
+- Toggles (all wired to update):
+  - "Show prototype labels" (line 21-26): checked={settings.showPrototypeLabels}, affects display of prototype disclaimers (see PrototypeNotice usage pattern). Wired to real behavior in UI components that check this setting? Need to trace - but toggle itself is wired to update.
+  - "Show evidence levels by default" (28-32): checked={settings.showEvidenceByDefault}. Detail pages always show them regardless per description text.
+  - "Compact mode" (34-38): checked={settings.compactMode}. Wired to update.
+  - "Reduce flame motion" (40-45): checked={settings.reduceFlameMotion}. Wired to update.
+- "Space-dark display" panel states it's fixed single palette (no light mode). "Local storage" panel notes settings/saved/conversations stored locally only, shows PROTOTYPE_LABELS.dataset, Reset settings button calls reset().
+
+3. lib/context/SettingsProvider.jsx (E:\Cosmic-Nexus\lib\context\SettingsProvider.jsx)
+- Lines 1-77. Client context. DEFAULT_SETTINGS = {compactMode:false, showEvidenceByDefault:true, showPrototypeLabels:true, reduceFlameMotion:false} (13-18).
+- Uses usePersistentState with STORAGE_KEYS.settings and merge:true. Effect (32-39) removes stale 'theme' key if present. Effect (42-47) sets/removes data-compact attribute on document.documentElement when compactMode changes (CSS density override).
+- Exposes: settings, update, reset, defaults, toggleCompact, setShowEvidence, setShowPrototypeLabels, setReduceFlameMotion.
+- EVERY setting: name, type, default, affects:
+  1. compactMode (boolean, default false) - affects: adds/removes data-compact on <html> (line 45-47). This is a CSS hook (data-compact attribute) used for density overrides. Wired to real behavior (DOM/CSS effect). Also exposed toggleCompact.
+  2. showEvidenceByDefault (boolean, default true) - affects: UI components may read this to decide whether to show evidence badges by default in grids/lists (description says detail pages always show regardless). Wired via settings context; components can check settings.showEvidenceByDefault. Real behavior depends on consumers using it (not just cosmetic toggle value).
+  3. showPrototypeLabels (boolean, default true) - affects: controls whether prototype disclaimers/labels are shown (PrototypeNotice etc may check this). Wired via context.
+  4. reduceFlameMotion (boolean, default false) - affects: flame motion. Used in components - see flame components (FlameVisual checks settings.reduceFlameMotion, also EngineCanvas/three engine checks prefers-reduced-motion; in-app setting combined). Wired to real behavior.
+
+Accessibility/reduced-motion/high-contrast: 
+- reduceFlameMotion is an in-app setting (boolean). Also CSS has @media (prefers-reduced-motion: reduce) rules (globals.css lines ~1046, 1061). Three engine has prefersReducedMotion() utility. Components combine: e.g. EnvironmentPlateCard checks both (line ~22-25 in that file per grep) - uses reduceFlameMotion setting; FlameVisual does `const still = !animated || settings.reduceFlameMotion;`. So reduceFlameMotion is honored.
+- No high-contrast setting found. No prefers-contrast references. No explicit high-contrast toggle.
+- No reduced-motion toggle beyond reduceFlameMotion (and OS-level respected via CSS media queries and engine code). The in-app toggle is present and wired.
+- Accessibility others: lang="en" in layout. Skip link present. ARIA usage exists. Focus management partially (Drawer focuses panel, Tabs handle roving focus). No other a11y toggles.
+
+Real behavior vs cosmetic: compactMode has real DOM effect (CSS hook) - real. reduceFlameMotion read by flame components - real effect on rendering/animation. showEvidenceByDefault and showPrototypeLabels are flags read by components to conditionally render UI - real if components consume them; they exist in context and toggles update state. All 4 settings are stored and exposed; at minimum the wiring exists (update called). The audit below traces specific usage.
+
+E. SHELL / NAVIGATION
+---------------------
+
+1. components/shell/AppShell.jsx (E:\Cosmic-Nexus\components/shell\AppShell.jsx)
+- Lines 1-170. Client component. Manages environment, rail state, skip link, layout.
+- ENVIRONMENT mapping by route (60-82): "/" -> {density:"cinematic", mission:"iss"}, "/mission-lab" -> cinematic/moon, "/explore" -> quiet/earth, "/compare" quiet/earth, "/insights" quiet/earth, "/saved" quiet/earth, "/settings" quiet/earth, "/firewise" standard/iss, "/flame-lab" standard/iss. Longest-prefix match for subroutes (96-101).
+- Rail state: collapsed (useState false), railDocked (usePersistentState STORAGE_KEYS.railDocked true). railAllowed = RAIL_DOCKED_ROUTES.includes(pathname); docked = railAllowed && railDocked. ToggleRail flips docked.
+- Skip-to-content: <a href="#main-content" className="fx-btn-primary sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[90]">Skip to main content</a> (line ~107-109). Present.
+- Landmarks: <main id="main-content" tabIndex={-1} className="..."> (line 135). ConsoleRail renders <aside> (see ConsoleRail). MissionBar renders <header> (see below). Focus management on route change: main has tabIndex={-1} (can be programmatically focused), but no explicit focus() call on pathname change shown in this code. Route change handled by Next.js; AppShell re-renders on pathname change but doesn't explicitly call main.focus() here. (Note: Drawer focuses its panel on open; Tabs manage focus internally.)
+- Imports: dynamic EarthBackdrop (ssr:false), SpaceEnvironment, ConsoleRail, MissionBar, FirewiseRail.
+
+2. ConsoleRail.jsx (E:\Cosmic-Nexus\components/shell\ConsoleRail.jsx)
+- Renders <aside> with classes for collapsed/expanded (responsive breakpoints). Contains identity (logo mark, wordmark), RailNav, toggle button. Mobile: Drawer used? (has mobileOpen state and closeMobile, ToggleIcon/Menu usage; Drawer component exists). RailNav renders primary/secondary nav with NavLink. Labels hidden when collapsed and below xl; title attr always present. Active state via data-active and aria-current="page".
+- Focus management: no explicit focus on collapse/expand beyond normal DOM. Drawer component handles focus trapping/focusing on open (see Drawer).
+
+3. MissionBar.jsx (E:\Cosmic-Nexus\components/shell\MissionBar.jsx)
+- Renders <header> (line ~101 in the file shown). Left: tagline + attribution (responsive). Right: feed items (xl+), Compare link with pill showing count from useCompare().
+
+4. PageHeader.jsx (E:\Cosmic-Nexus\components/shell/PageHeader.jsx)
+- Renders <header> with variant default/console. Contains h1 (line 39 shown). Eyebrow, description, actions, telemetry.
+
+5. components/shared/Drawer.jsx (E:\Cosmic-Nexus\components/shared\Drawer.jsx)
+- Slide-over. Focus management: on open, sets body overflow hidden, does requestAnimationFrame to call panelRef.current?.focus() (line ~23-37). Also handles Escape key (27-37). Role dialog, aria-modal="true", aria-label={title}. Closes on backdrop click. Mounts/unmounts with open (returns null if not open).
+
+6. lib/navigation.js (E:\Cosmic-Nexus\lib/navigation.js)
+- NAV_PRIMARY (15-26): home(/), explore(/explore), flame-lab(/flame-lab), mission-lab(/mission-lab), firewise(/firewise), insights(/insights), compare(/compare). Each with id,label,href,icon,hint.
+- NAV_SECONDARY (28-31): saved(/saved), settings(/settings).
+- RAIL_DOCKED_ROUTES is empty array [] (42-53). isRouteActive checks exact or startsWith for non-root.
+- Full route list (from NAV + known app routes): /, /explore, /flame-lab, /mission-lab, /firewise, /insights, /compare, /saved, /settings, plus /experiments/[id] (dynamic), and other app routes like /experiments listing page exists. App routes found: compare, experiments (with [id]), explore, firewise, flame-lab, insights, mission-lab, saved, settings. Also root / (page.js).
+
+Mobile drawer/rail collapse implementation: ConsoleRail has collapsed state (prop from parent/AppShell? AppShell passes collapsed and onToggleCollapse to ConsoleRail). Collapse affects width classes (w-[68px] when collapsed vs expanded at xl). Mobile: ConsoleRail has mobileOpen state and renders Menu button? (ToggleIcon shown, but Menu import present; in full file likely mobile menu button opens Drawer with RailNav). Rail collapse is controlled via toggle button (PanelRightOpen/Close) shown at xl+. Mobile uses Drawer for nav.
+
+Skip-to-content link: present in AppShell (line ~107-109). Yes.
+Landmarks: header (MissionBar), aside (ConsoleRail), main (AppShell line 135 with id="main-content", tabIndex=-1). nav elements inside RailNav/ConsoleRail.
+Focus management on route change: main has tabIndex=-1 enabling programmatic focus if desired, but AppShell does not explicitly call focus() on pathname change. Drawer manages focus on open/close. Tabs use roving tabindex and move focus on arrow keys. This is partial focus management.
+
+F. ERROR HANDLING / RESILIENCE
+------------------------------
+
+Search for error handling files:
+- app/error.js: NOT FOUND (no such file under app/)
+- app/not-found.js: NOT FOUND (no such file under app/)
+- app/loading.js: NOT FOUND (no such file under app/)
+- error.tsx: NOT FOUND (searched repo; none found)
+- Suspense boundaries: Found only in components/three/EngineClient.jsx (line 3 imports Suspense, line 102 wraps children in <Suspense fallback={null}>). No other Suspense usage found.
+- ErrorBoundary classes: NOT FOUND (grep for ErrorBoundary returned nothing)
+- EmptyState usage: Found in CompareView, ExplorerView, FirewisePanel, SavedView (all client components). EmptyState component exists at components/shared/EmptyState.jsx.
+
+Missing records handling (e.g. bad /experiments/[id]):
+- app/experiments/[id]/page.js (line 37): `if (!detail) notFound();` after fetching detail via getExperimentDetail(id). Also generateMetadata returns {title:"Experiment not found"} if detail is null (line 29). Uses Next.js `notFound()` from "next/navigation".
+- lib/api/experiments.js getExperimentDetail returns null if experiment not found (line 41-49). Other getters also handle null cases appropriately.
+- So bad ID triggers Next.js not found UI (app-level not-found.js does not exist in this repo; in Next.js App Router, if no app/not-found.js is present, it uses the default Next.js 404 page).
+
+Exact list:
+- error.js: does NOT exist
+- not-found.js: does NOT exist (no app/not-found.js; experiments/[id] calls notFound() which will fall back to default 404)
+- loading.js: does NOT exist
+- error.tsx: does NOT exist
+- Suspense boundaries: exist only in components/three/EngineClient.jsx (1 occurrence)
+- ErrorBoundary classes (React class component): do NOT exist
+- EmptyState usage: 4 locations (CompareView, ExplorerView, FirewisePanel, SavedView)
+
+Conclusion: Resilience primitives are minimal - relies on Next.js defaults for 404 (via notFound()), has EmptyState for empty data states, minimal Suspense for 3D canvas. No custom error boundaries, no custom error/loading/not-found pages.
+
+G. ACCESSIBILITY AUDIT (SPOT-CHECK)
+-----------------------------------
+
+Counts (from grep):
+- aria-label usage: 22 occurrences found (see earlier list including icon buttons, inputs, sections, etc.)
+- role= usage: Found roles img, dialog, tablist, tab, switch, progressbar, region, status (plus implicit roles). Explicit role attributes seen: role="img" (icon.svg), role="dialog" (Drawer), role="tablist"/"tab" (Tabs), role="switch" (Form Toggle), role="progressbar" (ProgressBar), role="region" (DataTable), role="status" (EngineCanvas). Total role= occurrences: 12 distinct usages.
+- <img alt=: 0 occurrences (no <img> tags found in app/components)
+- onKeyDown handlers: 4 locations - MessageInput (Enter to submit), Drawer (Escape), Tabs (arrow keys/home/end), plus any others? Also seen in Tabs and Drawer and MessageInput. (4 total)
+- focus-visible styles: Referenced in CSS (e.g. .focus:not-sr-only classes used; globals.css likely defines focus-visible styles). App uses sr-only focus:not-sr-only patterns (skip link, etc.) and focus states on interactive elements.
+
+Heading hierarchy (spot-checked representative pages):
+
+1. Home/Dashboard (app/page.js renders DashboardView). MissionOverview.jsx has h2 id="overview-heading" (line 92 in that file). QuickNav has aria-labelledby="quick-nav-heading" (section) - QuickNav likely has h2/h3; MetricStrip has aria-labelledby="metric-strip-title". Need to see actual h1 - app/page.js uses PageHeader which renders h1 (PageHeader renders h1 with title). So Dashboard likely has h1 from PageHeader + h2s in sections. Overall h1→h2→h3 structure appears present.
+2. Explore page: PageHeader renders h1 "Explore the dataset". ExplorerView content has no h1 (it's a client view) - sections use labels; ExperimentCard renders h3 for title (line 48 in ExperimentCard: `<h3 className="text-sm font-semibold...">{experiment.title}</h3>`). So page has h1, card titles are h3. Reasonable hierarchy.
+3. Compare page: PageHeader h1 "Experiment comparison". CompareView sections use SectionHeader component (renders headings) - SectionHeader likely renders h2/h3 depending on usage; e.g. "Difference summary" uses SectionHeader (line 157 in CompareView) - SectionHeader takes eyebrow/title; implementation not fully shown but typically renders proper heading levels.
+4. Settings page: PageHeader h1 "Settings". SettingsContent uses SectionHeader for "Interface", "Appearance", "Data" - likely h2s.
+
+Keyboard handlers: onKeyDown found on MessageInput (Enter/Shift+Enter), Drawer (Escape), Tabs (arrow navigation). Clickable elements are mostly buttons/Links; non-semantic clickable divs: searched for onClick on non-button/non-Link elements - found mostly on button elements and Links; RemoveColumnButton renders button (line 87 in CompareTable). CompareView uses buttons for chips remove, etc. No obvious divs with onClick as the main pattern (the codebase prefers buttons/Links).
+
+Focus management: Drawer focuses panel on open. Tabs implement roving tabindex and move focus on arrow keys. Skip link moves focus to #main-content (main has tabIndex=-1). Route change doesn't explicitly focus main - potential minor issue (keyboard users land at top but focus not moved to main; skip link is available).
+
+Concrete gaps identified:
+
+1. Missing skip link? No - skip link IS present in AppShell (line ~107-109 in AppShell): `<a href="#main-content" className="fx-btn-primary sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[90]">Skip to main content</a>`. Exists.
+2. Missing lang attribute? No - layout.js has `<html lang="en">` (line 44).
+3. Missing alt text on images: No <img> tags at all in app/components - uses SVG icons (decorative, with aria-hidden="true") and canvas/SVG in flame visualizations. No img elements requiring alt.
+4. Non-semantic clickable divs: None obvious from search - interactive elements use button/Link components.
+5. Missing labels on form controls: Most inputs have labels - Explore search has sr-only label "Search experiments" (line 145-147 in ExplorerView). Compare picker has sr-only label (53-55 in CompareView). Firewise input has sr-only label (61-63 in MessageInput). Selects use label prop (shared Form Select renders label). Toggle component renders label. So form controls appear labeled.
+6. Color-only meaning: Compare table uses "differs" Badge text in addition to background color (line 59-62 in CompareTable: shows Badge with text "differs" when differing). Evidence badges use colors but also have text/labels. Risk/difference indicators include text labels.
+7. Focus-visible styles: Used via focus:not-sr-only and focus classes. The skip link becomes visible on focus. Buttons/inputs have focus styles (fx classes likely include focus states).
+8. Missing main landmark? Main exists with id and tabIndex (AppShell line 135). Yes.
+9. Heading hierarchy: Generally good (h1 from PageHeader, h2/h3 below). PageHeader ensures h1 on each page.
+10. Aria-live regions: SaveButton has aria-live="polite" span for announcements (line 46-48). EngineCanvas uses role="status" spans for screen reader announcements. Live regions present where dynamic updates occur.
+
+Potential gaps (explicit):
+- Route change focus management: main has tabIndex={-1} but no code to focus it on pathname change - keyboard users navigating via links may not land focus in main content area (they stay where focus was or go to next element). This is a common a11y gap.
+- No error boundary components: if a client component throws, there's no ErrorBoundary to catch and show friendly UI (and no app-level error.js). Next.js error.js would catch errors in route segments, but it doesn't exist - so unhandled errors fall back to Next.js default error UI. This is an absence/gap.
+- Drawer: focus trap is basic (focuses panel on open, closes on Escape, clicks backdrop to close) but no focus wrap (Tab/Shift+Tab doesn't cycle within dialog) - Drawer.jsx doesn't implement focus trap logic beyond initial focus. This is a gap in focus management.
+- High contrast mode: no setting, no specific handling for prefers-contrast. Only dark theme exists.
+
+Overall a11y: Reasonable foundation (landmarks, skip link, labels, live regions, keyboard handlers for tabs/input). Notable gaps: no focus trap in Drawer, no focus move to main on route change, no custom error boundaries/pages, no high-contrast support.
+
+SUMMARY OF EXPLICIT ABSENCES
+----------------------------
+
+Does NOT exist:
+- app/error.js
+- app/not-found.js
+- app/loading.js
+- error.tsx (anywhere in repo)
+- ErrorBoundary class components
+- Focus trap implementation in Drawer (basic focus management only)
+- High contrast setting / prefers-contrast handling
+- URL/query-param state sync for Explore filters/sorting
+- Focus move to main content on route change (main has tabIndex but no focus() call)
+- Any <img> elements with alt requirements (no img elements at all)
+
+EXISTS (notable):
+- Skip link in AppShell ✓
+- lang="en" in layout ✓
+- EmptyState component and usage ✓
+- Suspense only in EngineClient ✓
+- reduceFlameMotion setting + OS prefers-reduced-motion respected ✓
+- aria-live regions (SaveButton, EngineCanvas status) ✓
+- Keyboard navigation for Tabs ✓
+- Proper labeling on form controls ✓
+- Non-color-only indicators (e.g. "differs" text badge) ✓
+
+END OF REPORT

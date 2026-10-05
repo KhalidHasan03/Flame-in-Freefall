@@ -1,7 +1,8 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { Compass, Lightbulb, ShieldQuestion } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFirewise } from "@/lib/context/FirewiseProvider";
 import { PROTOTYPE_LABELS } from "@/lib/constants";
 import Panel from "@/components/shared/Panel";
@@ -32,11 +33,50 @@ const PRINCIPLES = [
 export default function FirewiseView({ suggested }) {
   const { ask } = useFirewise();
   const [asked, setAsked] = useState(0);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const consumed = useRef(false);
 
-  const handlePick = (question) => {
-    setAsked((count) => count + 1);
-    ask(question);
-  };
+  /*
+    `useCallback` rather than an inline handler so the effect below can depend on it truthfully.
+    Without the memo the linter is right to complain: the effect closes over a function that is
+    a new value on every render, so listing it as a dependency would be noise and omitting it
+    would be an undeclared capture. Memoised on `ask` alone — `setAsked` is a stable setter and
+    does not belong in the list.
+  */
+  const handlePick = useCallback(
+    (question) => {
+      setAsked((count) => count + 1);
+      ask(question);
+    },
+    [ask],
+  );
+
+  /*
+    A question handed over by the dashboard's research prompt, arriving as `?ask=`.
+
+    `ask` is called rather than seeded, so the question goes through the same path as one typed
+    into the panel — same conversation, same title-from-question behaviour, same in-flight guard.
+    Nothing here reaches into provider state.
+
+    The URL is then replaced rather than pushed, which is the whole point of doing it this way:
+    the question becomes part of the conversation instead of a query string that would re-fire on
+    every refresh and share a link to a question already asked. `replace` also keeps this out of
+    browser history, so Back returns to the dashboard rather than to a stale copy of this route.
+
+    The ref guards the double invocation that React 19 StrictMode causes in development, where
+    effects mount, unmount and remount. Without it the question is asked twice on every dev
+    reload; with it, once per navigation. The check is on `consumed` rather than on the parameter
+    because the parameter is still present during the first of those two mounts.
+  */
+  useEffect(() => {
+    const incoming = searchParams.get("ask")?.trim();
+    if (!incoming || consumed.current) return;
+
+    consumed.current = true;
+    handlePick(incoming);
+    router.replace("/firewise", { scroll: false });
+  }, [searchParams, router, handlePick]);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
