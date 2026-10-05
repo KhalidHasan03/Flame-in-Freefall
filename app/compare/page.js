@@ -14,6 +14,7 @@ export default async function ComparePage() {
   return (
     <div className="space-y-6">
       <PageHeader
+          variant="compact"
         eyebrow="Side-by-side analysis"
         title="Experiment comparison"
         description={`Select up to ${MAX_COMPARISON_SIZE} records and compare their recorded conditions, evidence strength and conclusions.`}

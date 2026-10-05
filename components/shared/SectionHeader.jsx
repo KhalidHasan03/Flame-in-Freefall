@@ -17,11 +17,11 @@ export default function SectionHeader({
             {eyebrow}
           </p>
         ) : null}
-        <Tag id={id} className="text-lg font-semibold text-ink sm:text-xl">
+        <Tag id={id} className="text-base font-semibold text-ink">
           {title}
         </Tag>
         {description ? (
-          <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">{description}</p>
+          <p className="max-w-2xl text-xs leading-relaxed text-ink-muted">{description}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

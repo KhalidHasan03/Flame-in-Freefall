@@ -14,6 +14,7 @@ export default async function FlameLabPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+          variant="compact"
         eyebrow="Interactive model"
         title="Flame Lab"
         description="Change gravity, oxidiser, pressure, airflow, temperature and fuel to see how a stylised flame responds, alongside the prototype risk breakdown for each target environment."

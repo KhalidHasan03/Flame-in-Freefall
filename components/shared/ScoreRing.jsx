@@ -44,17 +44,12 @@ export default function ScoreRing({ value, label, caption, tone: name = "brand",
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span
             className={`fx-numeric font-bold leading-none ${palette.text}`}
-            style={{ fontSize: 28 * scale }}
+            style={{ fontSize: 20 * scale }}
           >
             {Math.round(clamped)}%
           </span>
           {label ? (
-            <span
-              className="fx-label mt-1 text-center leading-tight"
-              style={{ fontSize: 9 * scale, letterSpacing: "0.08em" }}
-            >
-              {label}
-            </span>
+            <span className="fx-label mt-1 text-center leading-tight">{label}</span>
           ) : null}
         </div>
       </div>

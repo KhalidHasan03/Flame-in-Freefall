@@ -45,7 +45,7 @@ export default function ExperimentCard({ experiment, relevance, params }) {
           <EvidenceBadge level={experiment.evidenceLevel} showLabel={false} />
         </div>
 
-        <h3 className="text-sm font-semibold leading-snug text-ink">
+        <h3 className="text-xs font-semibold leading-snug text-ink">
           <Link href={`/experiments/${experiment.id}`} className="hover:text-brand">
             {experiment.title}
           </Link>

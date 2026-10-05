@@ -140,7 +140,7 @@ export default function InsightsView({
   );
   const tabs = TABS.map((item) => ({ ...item, count: counts[item.id] }));
 
-  const active = toCards(tab === "statements" ? statements : sources[tab]);
+  const active = tab === "statements" ? toCards(statements) : sources[tab];
   const missionIds = Object.keys(missionFindings);
 
   return (
@@ -162,6 +162,7 @@ export default function InsightsView({
                 key={insight.id}
                 insight={insight}
                 accent={tab === "gaps" ? "ember" : "brand"}
+                meta={insight.meta}
               />
             ))}
           </ul>

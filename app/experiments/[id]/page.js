@@ -49,6 +49,7 @@ export default async function ExperimentDetailPage({ params }) {
       </Link>
 
       <PageHeader
+          variant="compact"
         eyebrow={`${experiment.program} • ${formatDate(experiment.date)}`}
         title={experiment.title}
         description={experiment.abstract}
@@ -84,7 +85,7 @@ export default async function ExperimentDetailPage({ params }) {
         <div className="space-y-4">
           <Panel className="p-5">
             <SectionHeader eyebrow="Summary" title="Key finding" />
-            <p className="mt-2.5 text-sm leading-relaxed text-ink">{experiment.keyFinding}</p>
+            <p className="mt-2.5 text-xs leading-relaxed text-ink">{experiment.keyFinding}</p>
             {experiment.findings?.length ? (
               <ul className="mt-3.5 space-y-2 border-t border-line pt-3.5">
                 {experiment.findings.map((finding) => (

@@ -19,7 +19,7 @@ function Bucket({ title, hint, items, render, onRemove, onClear }) {
     <Panel className="flex flex-col gap-3.5 p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-ink">
+          <h2 className="text-xs font-semibold text-ink">
             {title} <span className="fx-numeric ml-1 text-ink-faint">{items.length}</span>
           </h2>
           <p className="mt-0.5 text-[11px] leading-relaxed text-ink-muted">{hint}</p>

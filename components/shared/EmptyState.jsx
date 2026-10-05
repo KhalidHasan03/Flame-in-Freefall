@@ -9,7 +9,7 @@ export default function EmptyState({ icon: Icon, title, description, action, cla
         </span>
       ) : null}
       <div className="space-y-1.5">
-        <p className="text-sm font-semibold text-ink">{title}</p>
+        <p className="text-xs font-semibold text-ink">{title}</p>
         {description ? (
           <p className="mx-auto max-w-sm text-xs leading-relaxed text-ink-muted">{description}</p>
         ) : null}

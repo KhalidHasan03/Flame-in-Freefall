@@ -10,6 +10,7 @@ export default function SavedPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+          variant="compact"
         eyebrow="Workspace"
         title="Saved items"
         description="Experiments and insights you bookmarked. Everything stays in this browser."

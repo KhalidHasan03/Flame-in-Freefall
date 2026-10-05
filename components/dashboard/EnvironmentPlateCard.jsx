@@ -144,7 +144,7 @@ export default function EnvironmentPlateCard({ plate, className = "" }) {
 
       <div className="flex flex-1 flex-col gap-1.5 border-t border-line p-3.5">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-display text-sm font-semibold tracking-[-0.01em] text-ink">{plate.name}</h3>
+          <h3 className="font-display text-xs font-semibold tracking-[-0.01em] text-ink">{plate.name}</h3>
           <Flame className="size-3.5 shrink-0 text-ember/70" aria-hidden="true" />
         </div>
         <p className="text-[11px] leading-relaxed text-ink-muted">{plate.strapline}</p>

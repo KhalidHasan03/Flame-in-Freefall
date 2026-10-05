@@ -98,7 +98,7 @@ export function Toggle({ checked, onChange, label, description, id, className = 
   return (
     <div className={`flex items-start justify-between gap-4 ${className}`}>
       <div className="min-w-0">
-        <label htmlFor={toggleId} className="block text-sm font-medium text-ink">
+        <label htmlFor={toggleId} className="block text-xs font-medium text-ink">
           {label}
         </label>
         {description ? (

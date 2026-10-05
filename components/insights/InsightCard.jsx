@@ -14,7 +14,7 @@ export default function InsightCard({ insight, accent = "brand", meta }) {
         {meta ? <span className="fx-label ml-auto">{meta}</span> : null}
       </div>
 
-      <h3 className="mt-2 text-sm font-semibold leading-snug text-ink">{insight.title}</h3>
+      <h3 className="mt-2 text-xs font-semibold leading-snug text-ink">{insight.title}</h3>
       <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{insight.statement ?? insight.detail}</p>
 
       {insight.supportingIds?.length ? (

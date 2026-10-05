@@ -16,6 +16,7 @@ export default async function FirewisePage() {
   return (
     <div className="space-y-6">
       <PageHeader
+          variant="compact"
         eyebrow="Evidence-first assistant"
         title="Firewise"
         description="Ask about flame behaviour, materials, missions or gaps. Answers cite the records they rest on and state when the dataset cannot support a conclusion."

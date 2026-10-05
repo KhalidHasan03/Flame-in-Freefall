@@ -52,7 +52,7 @@ export default function ExperimentFlamePanel({ experiment }) {
         ].map((item) => (
           <div key={item.label}>
             <dt className="fx-label">{item.label}</dt>
-            <dd className="fx-numeric mt-0.5 text-sm font-bold text-ink">{item.value}</dd>
+            <dd className="fx-numeric mt-0.5 text-xs font-bold text-ink">{item.value}</dd>
           </div>
         ))}
       </dl>

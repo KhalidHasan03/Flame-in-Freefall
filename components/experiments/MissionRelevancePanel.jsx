@@ -43,7 +43,7 @@ export default function MissionRelevancePanel({ experiment, missions }) {
       </div>
 
       <div className="flex items-baseline gap-2">
-        <span className="fx-numeric text-3xl font-bold text-brand">{result.score}%</span>
+        <span className="fx-numeric text-xl font-bold text-brand">{result.score}%</span>
         <span className="text-xs text-ink-muted">prototype match score</span>
       </div>
 

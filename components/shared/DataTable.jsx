@@ -25,7 +25,7 @@ export function TableEmpty({ title, description, actionLabel, onAction, icon: Ic
         <Icon className="size-5 text-ink-faint" aria-hidden="true" />
       </span>
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-ink">{title}</p>
+        <p className="text-xs font-semibold text-ink">{title}</p>
         {description ? (
           <p className="mx-auto max-w-sm text-xs leading-relaxed text-ink-muted">{description}</p>
         ) : null}

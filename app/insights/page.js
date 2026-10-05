@@ -25,6 +25,7 @@ export default async function InsightsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+          variant="compact"
         eyebrow="Cross-experiment synthesis"
         title="Insights"
         description="Patterns, high-relevance findings, genuine conflicts in the evidence, and the gaps that limit what the dataset can currently support."

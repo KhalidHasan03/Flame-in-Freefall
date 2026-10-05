@@ -27,6 +27,7 @@ export default async function MissionLabPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+          variant="compact"
         eyebrow="Mission applicability"
         title="Mission Lab"
         description="Compare target environments, rank the dataset against each one, and read the findings and gaps that matter for crewed missions where the oxidiser is life-support consumable."

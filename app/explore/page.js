@@ -19,6 +19,7 @@ export default async function ExplorePage() {
   return (
     <div className="space-y-6">
       <PageHeader
+          variant="compact"
         eyebrow="Dataset explorer"
         title="Explore the dataset"
         description={`Filter ${experiments.length} synthetic experiment records by programme, fuel, gravity, airflow and evidence level. Relevance ranking uses the prototype scoring model.`}
